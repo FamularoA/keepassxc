@@ -345,6 +345,9 @@ endif()
 
 configure_file(config-keepassx.h.in ${CMAKE_CURRENT_BINARY_DIR}/config-keepassx.h)
 configure_file(git-info.h.in ${CMAKE_CURRENT_BINARY_DIR}/git-info.h)
+if(KPXC_FEATURE_GOOGLEDRIVE)
+    configure_file(gui/remote/google-drive-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/gui/remote/google-drive-config.h)
+endif()
 
 # SVG Widgets
 find_package(Qt6 REQUIRED COMPONENTS SvgWidgets)
@@ -376,6 +379,10 @@ target_link_libraries(keepassxc_gui
         ${fdosecrets_LIB}
         ${keeshare_LIB}
         ${sshagent_LIB})
+
+if(KPXC_FEATURE_GOOGLEDRIVE)
+    target_link_libraries(keepassxc_gui Qt6::NetworkAuth)
+endif()
 
 if(APPLE)
     target_link_libraries(keepassxc_gui "-framework Foundation -framework AppKit -framework Carbon -framework Security -framework LocalAuthentication -framework ScreenCaptureKit")

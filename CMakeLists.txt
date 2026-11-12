@@ -65,11 +65,25 @@ endif()
 option(KPXC_FEATURE_NETWORK "Include code that reaches out to external networks (e.g. downloading icons)" ON)
 option(KPXC_FEATURE_UPDATES "Include automatic update checks; disable for managed distributions" ON)
 option(KPXC_FEATURE_DOCS "Build offline documentation; requires asciidoctor tool" ON)
+option(KPXC_FEATURE_GOOGLEDRIVE "Native Google Drive synchronization" ON)
+set(KPXC_GOOGLE_CLIENT_ID "" CACHE STRING "Google OAuth client ID")
+set(KPXC_GOOGLE_CLIENT_SECRET "" CACHE STRING "Google OAuth client secret")
 
 # Reconcile update feature with overall network feature
 if(NOT KPXC_FEATURE_NETWORK AND KPXC_FEATURE_UPDATES)
     message(STATUS "Disabling KPXC_FEATURE_UPDATES because KPXC_FEATURE_NETWORK is disabled")
     set(KPXC_FEATURE_UPDATES OFF)
+endif()
+
+# Reconcile Google Drive feature with network and OAuth client configuration
+if(KPXC_FEATURE_GOOGLEDRIVE)
+    if(NOT KPXC_FEATURE_NETWORK)
+        message(STATUS "Disabling KPXC_FEATURE_GOOGLEDRIVE because KPXC_FEATURE_NETWORK is disabled")
+        set(KPXC_FEATURE_GOOGLEDRIVE OFF)
+    elseif(NOT KPXC_GOOGLE_CLIENT_ID AND NOT CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+        message(STATUS "Disabling KPXC_FEATURE_GOOGLEDRIVE because KPXC_GOOGLE_CLIENT_ID is not set")
+        set(KPXC_FEATURE_GOOGLEDRIVE OFF)
+    endif()
 endif()
 
 # FDO Secrets is only available on Linux
@@ -86,6 +100,7 @@ endif()
 add_feature_info("Networking" KPXC_FEATURE_NETWORK "Code that can reach out to external networks is included (e.g. downloading icons)")
 add_feature_info("Update Checks" KPXC_FEATURE_UPDATES "Periodic update checks can be performed")
 add_feature_info("Documentation" KPXC_FEATURE_DOCS "Offline documentation")
+add_feature_info("Google Drive" KPXC_FEATURE_GOOGLEDRIVE "Native Google Drive synchronization")
 
 # VCPKG features (must come before project())
 if(WITH_BUILD_QT)
@@ -458,6 +473,20 @@ endif()
 # Minimum Qt version check
 if(Qt6Core_VERSION VERSION_LESS "6.2.4")
     message(FATAL_ERROR "Qt version 6.2.4 or higher is required")
+endif()
+
+# Google Drive OAuth PKCE requires Qt >= 6.8 and Qt6::NetworkAuth
+if(KPXC_FEATURE_GOOGLEDRIVE)
+    if(Qt6Core_VERSION VERSION_LESS "6.8.0")
+        message(STATUS "Disabling KPXC_FEATURE_GOOGLEDRIVE because Qt 6.8.0 or higher is required (found ${Qt6Core_VERSION})")
+        set(KPXC_FEATURE_GOOGLEDRIVE OFF)
+    else()
+        find_package(Qt6 COMPONENTS NetworkAuth QUIET)
+        if(NOT Qt6NetworkAuth_FOUND)
+            message(STATUS "Disabling KPXC_FEATURE_GOOGLEDRIVE because Qt6::NetworkAuth was not found")
+            set(KPXC_FEATURE_GOOGLEDRIVE OFF)
+        endif()
+    endif()
 endif()
 
 # Set the correct Qt prefix path

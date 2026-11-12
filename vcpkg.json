@@ -45,6 +45,7 @@
         },
         "qtdeclarative",
         "qtimageformats",
+        "qtnetworkauth",
         "qtsvg",
         {
           "name": "qttools",
